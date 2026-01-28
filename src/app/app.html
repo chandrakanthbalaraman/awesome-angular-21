@@ -1,1 +1,105 @@
-<router-outlet />
+<div class="app-layout" [class.sidebar-hidden]="!sidebarOpen()">
+  <!-- Sidebar Navigation -->
+  @if (sidebarOpen()) {
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">
+            <lucide-icon [img]="icons.zap" [size]="24"></lucide-icon>
+          </span>
+          <div class="logo-text">
+            <span class="logo-title">Angular 21</span>
+            <span class="logo-subtitle">Learning Portal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-info">
+          <span>Your Progress</span>
+          <span class="progress-percent">8%</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" style="width: 8%"></div>
+        </div>
+      </div>
+
+      <nav class="module-nav">
+        <!-- Phase 1: Core -->
+        <div class="nav-section">
+          <span class="section-label">Phase 1 • Core Fundamentals</span>
+
+          <a routerLink="/module-01-signals" routerLinkActive="active" class="module-link">
+            <span class="module-icon completed">✓</span>
+            <div class="module-info">
+              <span class="module-name">Signals Deep Dive</span>
+              <span class="module-lessons">8 lessons</span>
+            </div>
+          </a>
+
+          <a routerLink="/module-02-components" routerLinkActive="active" class="module-link">
+            <span class="module-icon current">2</span>
+            <div class="module-info">
+              <span class="module-name">Components Mastery</span>
+              <span class="module-lessons">7 lessons</span>
+            </div>
+          </a>
+
+          <a class="module-link locked">
+            <span class="module-icon">3</span>
+            <div class="module-info">
+              <span class="module-name">Directives & Pipes</span>
+              <span class="module-lessons">Coming soon</span>
+            </div>
+          </a>
+
+          <a class="module-link locked">
+            <span class="module-icon">4</span>
+            <div class="module-info">
+              <span class="module-name">Services & DI</span>
+              <span class="module-lessons">Coming soon</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Phase 2: State & Data -->
+        <div class="nav-section">
+          <span class="section-label">Phase 2 • State & Data</span>
+
+          <a class="module-link locked">
+            <span class="module-icon">5</span>
+            <div class="module-info">
+              <span class="module-name">Forms Mastery</span>
+              <span class="module-lessons">Coming soon</span>
+            </div>
+          </a>
+
+          <a class="module-link locked">
+            <span class="module-icon">6</span>
+            <div class="module-info">
+              <span class="module-name">HTTP & RxJS</span>
+              <span class="module-lessons">Coming soon</span>
+            </div>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="https://angular.dev" target="_blank" class="footer-link">
+          <lucide-icon [img]="icons.externalLink" [size]="14"></lucide-icon>
+          Angular Docs
+        </a>
+      </div>
+    </aside>
+  }
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <!-- Hamburger Toggle - Fixed Position -->
+    <button class="menu-toggle" (click)="toggleSidebar()">
+      <lucide-icon [img]="icons.menu" [size]="20"></lucide-icon>
+    </button>
+
+    <router-outlet />
+  </main>
+</div>

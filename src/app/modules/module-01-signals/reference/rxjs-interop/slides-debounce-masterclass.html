@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debounce Search: RxJS vs Signals</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #151921;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --primary-gradient: linear-gradient(135deg, #ff2e63, #ff0055);
+            --secondary-gradient: linear-gradient(135deg, #00f4d5, #00a896);
+            --slide-width: 1080px;
+            --slide-height: 1350px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #222;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            gap: 40px;
+        }
+
+        @media print {
+            @page { 
+                size: 1080px 1350px; 
+                margin: 0; 
+            }
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 1080px;
+                height: 1350px;
+            }
+            body { 
+                background: none; 
+                display: block; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            .no-print { display: none !important; }
+            .slide { 
+                width: 1080px; 
+                height: 1350px; 
+                break-after: page; 
+                page-break-after: always; 
+                border: none; 
+                margin: 0; 
+                box-shadow: none;
+            }
+        }
+
+        .slide {
+            width: var(--slide-width);
+            height: var(--slide-height);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 70px;
+            border: 1px solid #333;
+        }
+
+        .glow {
+            position: absolute;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(15, 23, 42, 0) 70%);
+            border-radius: 50%;
+            z-index: 0;
+        }
+        .glow-1 { top: -200px; right: -200px; width: 600px; height: 600px; }
+        .glow-2 { bottom: -200px; left: -200px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, rgba(15, 23, 42, 0) 70%); }
+        .glow-orange { background: radial-gradient(circle, rgba(255, 165, 0, 0.15) 0%, rgba(15, 23, 42, 0) 70%); }
+
+        header {
+            z-index: 2;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 50px;
+            padding-bottom: 20px;
+            min-height: 60px;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            color: #00F4D5;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .badge-orange { color: #ffa500; }
+        .badge-red { color: #ff2e63; }
+
+        main {
+            z-index: 2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .center-v {
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            line-height: 1.1;
+            margin-bottom: 30px;
+            background: linear-gradient(to right, white, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+        }
+
+        h2 {
+            font-size: 3.2rem;
+            color: #00F4D5;
+            margin-bottom: 30px;
+            letter-spacing: -1px;
+        }
+
+        h3 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        p {
+            font-size: 1.7rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .window {
+            background: #191c24;
+            border-radius: 16px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            margin: 20px 0;
+            overflow: hidden;
+            border: 1px solid #333;
+            z-index: 2;
+        }
+
+        .window-header {
+            background: #252830;
+            padding: 12px 15px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+
+        pre {
+            padding: 25px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.35rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+
+        .k { color: #c792ea; }
+        .f { color: #82aaff; }
+        .s { color: #c3e88d; }
+        .c { color: #546e7a; font-style: italic; }
+        .n { color: #f78c6c; }
+        .t { color: #ffcb6b; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .grid > div { min-width: 0; }
+
+        .features li {
+            font-size: 1.8rem;
+            margin-bottom: 18px;
+            color: white;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .features li::before {
+            content: '✓';
+            color: #00F4D5;
+            font-weight: bold;
+            background: rgba(0, 244, 213, 0.1);
+            width: 45px; height: 45px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .cons li::before {
+            content: '✗';
+            color: #ff5f56;
+            background: rgba(255, 95, 86, 0.1);
+        }
+
+        footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            color: #64748b;
+            font-size: 1.4rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 30px;
+            z-index: 2;
+        }
+
+        .comparison-card {
+            background: #191c24;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #333;
+        }
+
+        .vs-badge {
+            background: linear-gradient(135deg, #ff2e63, #ff0055);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 1.8rem;
+            display: inline-block;
+            margin: 30px 0;
+        }
+
+        .tip-box {
+            background: rgba(0, 244, 213, 0.1);
+            border: 1px solid rgba(0, 244, 213, 0.3);
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .tip-box p {
+            color: #00F4D5;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .warning-box {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            padding: 20px 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .warning-box p {
+            color: #ffa500;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        .flow-box {
+            background: #252830;
+            padding: 18px 25px;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            border: 1px solid #444;
+        }
+        .flow-arrow {
+            font-size: 2rem;
+            color: #00F4D5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="position: fixed; top: 20px; right: 20px; z-index: 9999; background: #FF2E63; color: white; padding: 15px 30px; border-radius: 50px; font-weight: bold; box-shadow: 0 10px 20px rgba(0,0,0,0.5); font-family: sans-serif;">
+        Print and Save as PDF (Enable Background Graphics!)
+    </div>
+
+    <!-- 1. COVER -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <header>
+            <div class="badge">Angular 21</div>
+        </header>
+        <main class="center-v">
+            <p style="text-transform: uppercase; letter-spacing: 4px; color: #ff2e63; font-weight: bold;">Real-World Pattern</p>
+            <h1>Debounce Search</h1>
+            <h2 style="color: white; font-size: 2.5rem; margin-top: -20px;">RxJS vs Signals Showdown</h2>
+            
+            <div style="display: flex; gap: 20px; margin-top: 60px;">
+                <div style="background: #222; padding: 30px 40px; border-radius: 12px; border: 1px solid #444;">
+                    <span style="font-family: monospace; color: #ff2e63; font-size: 1.4rem;">Traditional RxJS</span>
+                </div>
+                <div style="background: #222; padding: 30px 40px; border-radius: 12px; border: 1px solid #444;">
+                    <span style="font-family: monospace; color: #00F4D5; font-size: 1.4rem;">toSignal()</span>
+                </div>
+                <div style="background: #222; padding: 30px 40px; border-radius: 12px; border: 1px solid #444;">
+                    <span style="font-family: monospace; color: #82aaff; font-size: 1.4rem;">toObservable()</span>
+                </div>
+            </div>
+
+            <p style="margin-top: 60px; font-size: 1.5rem; color: #64748b;">Which approach should YOU use? Let's find out!</p>
+        </main>
+        <footer>
+            <div>@cb0401</div>
+            <div>Swipe ➔</div>
+        </footer>
+    </div>
+
+    <!-- 2. THE PROBLEM -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <header><div class="badge badge-red">Problem</div></header>
+        <h2 style="color: #ff2e63;">The Search Problem</h2>
+        <p>Users type fast. APIs are slow. Without debouncing, you'll fire hundreds of requests per second!</p>
+        
+        <div class="window">
+            <div class="window-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+            <pre>
+<span class="c">// BAD: Fires on EVERY keystroke</span>
+<span class="k">&lt;input</span> (input)="<span class="f">search</span>($event)" <span class="k">/&gt;</span>
+
+<span class="f">search</span>(event: Event) {
+  <span class="k">const</span> query = event.target.value;
+  <span class="k">this</span>.http.<span class="f">get</span>(<span class="s">`/api?q=</span>${query}<span class="s">`</span>)  <span class="c">// 100+ requests!</span>
+}</pre>
+        </div>
+
+        <div class="flow-diagram">
+            <div class="flow-box">User types "angular"</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="border-color: #ff5f56;">7 API calls!</div>
+        </div>
+
+        <div class="warning-box">
+            <p><strong style="color:#ff5f56;">WARNING:</strong> Without debouncing: Performance issues, rate limits, wasted bandwidth</p>
+        </div>
+
+        <footer>
+            <div>@cb0401</div>
+            <div>2 / 7</div>
+        </footer>
+    </div>
+
+    <!-- 3. TRADITIONAL RXJS WAY -->
+    <div class="slide">
+        <div class="glow glow-1 glow-orange"></div>
+        <div class="glow glow-2"></div>
+        <header><div class="badge badge-orange">Legacy</div></header>
+        <h2 style="color: #ffa500;">Traditional RxJS Approach</h2>
+        <p>The classic way: Subject + pipe operators + manual subscription.</p>
+        
+        <div class="window">
+            <div class="window-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+            <pre>
+<span class="c">// Component</span>
+searchSubject = <span class="k">new</span> <span class="t">Subject</span>&lt;<span class="t">string</span>&gt;();
+results$: <span class="t">Observable</span>&lt;<span class="t">string[]</span>&gt;;
+
+<span class="f">ngOnInit</span>() {
+  <span class="k">this</span>.results$ = <span class="k">this</span>.searchSubject.<span class="f">pipe</span>(
+    <span class="f">debounceTime</span>(<span class="n">500</span>),
+    <span class="f">distinctUntilChanged</span>(),
+    <span class="f">filter</span>(q => q.length > <span class="n">2</span>),
+    <span class="f">switchMap</span>(q => <span class="k">this</span>.http.<span class="f">get</span>(<span class="s">`/api?q=${q}`</span>))
+  );
+}
+
+<span class="c">// Template</span>
+<span class="k">&lt;input</span> (input)="searchSubject.<span class="f">next</span>($event.target.value)" <span class="k">/&gt;</span>
+<span class="k">&lt;div</span> *ngFor="let r of results$ | async"<span class="k">&gt;</span>{{ r }}<span class="k">&lt;/div&gt;</span></pre>
+        </div>
+
+        <ul class="features cons" style="margin-top: 20px;">
+            <li>Verbose boilerplate code</li>
+            <li>Async pipe or manual subscribe</li>
+            <li>Unsubscribe management needed</li>
+        </ul>
+        <footer>
+            <div>@cb0401</div>
+            <div>3 / 7</div>
+        </footer>
+    </div>
+
+    <!-- 4. MODERN SIGNAL WAY -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <header><div class="badge">Modern</div></header>
+        <h2>Signal + toObservable()</h2>
+        <p>The modern approach: Signal for state, convert to Observable for RxJS operators.</p>
+        
+        <div class="window">
+            <div class="window-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+            <pre>
+<span class="c">// State as Signal</span>
+searchQuery = <span class="f">signal</span>(<span class="s">''</span>);
+
+<span class="c">// Convert to Observable for RxJS operators</span>
+searchQuery$ = <span class="f">toObservable</span>(<span class="k">this</span>.searchQuery);
+
+<span class="c">// Back to Signal for template</span>
+debouncedSearch = <span class="f">toSignal</span>(
+  <span class="k">this</span>.searchQuery$.<span class="f">pipe</span>(
+    <span class="f">debounceTime</span>(<span class="n">500</span>),
+    <span class="f">distinctUntilChanged</span>(),
+    <span class="f">filter</span>(v => v.length > <span class="n">3</span>),
+    <span class="f">map</span>(v => v.<span class="f">toUpperCase</span>())
+  ),
+  { initialValue: <span class="s">''</span> }
+);</pre>
+        </div>
+
+        <div class="flow-diagram">
+            <div class="flow-box">signal()</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">toObservable()</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">RxJS pipe</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="border-color: #00F4D5;">toSignal()</div>
+        </div>
+
+        <footer>
+            <div>@cb0401</div>
+            <div>4 / 7</div>
+        </footer>
+    </div>
+
+    <!-- 5. THE TEMPLATE -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <header><div class="badge">Template</div></header>
+        <h2>Clean Template Syntax</h2>
+        <p>No async pipe needed! Just call the signal as a function.</p>
+        
+        <div class="window">
+            <div class="window-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+            <pre>
+<span class="c">&lt;!-- Input binds to signal --&gt;</span>
+<span class="k">&lt;input</span> 
+  [value]="searchQuery()"
+  (input)="searchQuery.<span class="f">set</span>($event.target.value)"
+<span class="k">/&gt;</span>
+
+<span class="c">&lt;!-- Display debounced result --&gt;</span>
+<span class="k">&lt;p&gt;</span>Searching for: <span class="k">{{</span> debouncedSearch() <span class="k">}}&lt;/p&gt;</span></pre>
+        </div>
+
+        <div class="tip-box">
+            <p><strong>TIP:</strong> Signals auto-unsubscribe when the component is destroyed. No cleanup needed!</p>
+        </div>
+
+        <div class="window" style="margin-top: 30px;">
+            <div class="window-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+            <pre>
+<span class="c">// Bonus: React to changes with effect()</span>
+<span class="f">effect</span>(() => {
+  console.<span class="f">log</span>(<span class="s">'Search changed:'</span>, <span class="k">this</span>.<span class="f">debouncedSearch</span>());
+});</pre>
+        </div>
+
+        <footer>
+            <div>@cb0401</div>
+            <div>5 / 7</div>
+        </footer>
+    </div>
+
+    <!-- 6. COMPARISON -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <header><div class="badge badge-red">Battle</div></header>
+        <h2 style="color: #ff2e63;">Side-by-Side Comparison</h2>
+        
+        <div class="grid">
+            <div class="comparison-card">
+                <h3 style="color: #ffa500;">Traditional RxJS</h3>
+                <pre style="font-size: 1.1rem; padding: 15px;">
+searchSubject = <span class="k">new</span> Subject();
+results$: Observable;
+
+<span class="f">ngOnInit</span>() {
+  <span class="k">this</span>.results$ = <span class="k">this</span>.searchSubject
+    .<span class="f">pipe</span>(...)
+}
+
+<span class="f">ngOnDestroy</span>() {
+  <span class="c">// Cleanup needed!</span>
+}</pre>
+            </div>
+            <div class="comparison-card">
+                <h3 style="color: #00F4D5;">Signal Approach</h3>
+                <pre style="font-size: 1.1rem; padding: 15px;">
+searchQuery = <span class="f">signal</span>(<span class="s">''</span>);
+
+debouncedSearch = <span class="f">toSignal</span>(
+  <span class="f">toObservable</span>(<span class="k">this</span>.searchQuery)
+    .<span class="f">pipe</span>(...)
+);
+
+<span class="c">// Auto cleanup!</span></pre>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+            <div style="text-align: center;">
+                <div style="font-size: 3rem;">~15</div>
+                <div style="color: #94a3b8;">Lines of code</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 3rem; color: #00F4D5;">~8</div>
+                <div style="color: #94a3b8;">Lines of code</div>
+            </div>
+        </div>
+
+        <footer>
+            <div>@cb0401</div>
+            <div>6 / 7</div>
+        </footer>
+    </div>
+
+    <!-- 7. WHEN TO USE WHAT -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <header><div class="badge">Decision</div></header>
+        <h2>When to Use What?</h2>
+        
+        <div style="display: grid; gap: 25px; margin-top: 30px;">
+            <div style="background: rgba(0, 244, 213, 0.1); padding: 30px; border-radius: 16px; border-left: 4px solid #00F4D5;">
+                <h3 style="color: #00F4D5; margin:0;">✓ Use Signal + toObservable()</h3>
+                <p style="margin: 15px 0 0 0; font-size: 1.5rem;">When you need RxJS operators like debounce, but want Signal's simplicity in templates</p>
+            </div>
+
+            <div style="background: rgba(130, 170, 255, 0.1); padding: 30px; border-radius: 16px; border-left: 4px solid #82aaff;">
+                <h3 style="color: #82aaff; margin:0;">✓ Use toSignal() for HTTP</h3>
+                <p style="margin: 15px 0 0 0; font-size: 1.5rem;">Perfect for "fire and forget" streams like HTTP requests</p>
+            </div>
+
+            <div style="background: rgba(255, 165, 0, 0.1); padding: 30px; border-radius: 16px; border-left: 4px solid #ffa500;">
+                <h3 style="color: #ffa500; margin:0;">✓ Use Pure RxJS</h3>
+                <p style="margin: 15px 0 0 0; font-size: 1.5rem;">For complex event streams requiring WebSockets, retries, or multicasting</p>
+            </div>
+        </div>
+
+        <div style="background: #191c24; padding: 25px; border-radius: 16px; margin-top: 40px; text-align: center;">
+            <p style="margin: 0; font-size: 1.8rem; color: white;"><strong style="color:#00F4D5;">Rule of Thumb:</strong> Start with Signals, add RxJS only when needed</p>
+        </div>
+
+        <footer>
+            <div>@cb0401</div>
+            <div>7 / 7</div>
+        </footer>
+    </div>
+
+    <!-- 8. OUTRO -->
+    <div class="slide">
+        <div class="glow glow-1"></div>
+        <div class="glow glow-2"></div>
+        <main class="center-v" style="align-items: center; text-align: center;">
+            <div style="font-size: 6rem; margin-bottom: 30px; color: #00F4D5;">&#10003;</div>
+            <h1>Level Up Your Angular!</h1>
+            <p style="max-width: 800px;">Signals + RxJS = The best of both worlds. Use them together for reactive, performant apps.</p>
+            
+            <div style="display: flex; gap: 30px; margin-top: 50px;">
+                <div style="background: #222; padding: 25px 40px; border-radius: 12px; border: 1px solid #444; text-align: center;">
+                    <!-- Lucide: Package -->
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#00F4D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16.5 9.4 7.55 4.24"/>
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.29 7 12 12 20.71 7"/>
+                        <line x1="12" x2="12" y1="22" y2="12"/>
+                    </svg>
+                    <div style="font-size: 1.2rem; color: #94a3b8; margin-top: 15px;">Less Boilerplate</div>
+                </div>
+                <div style="background: #222; padding: 25px 40px; border-radius: 12px; border: 1px solid #444; text-align: center;">
+                    <!-- Lucide: RefreshCw -->
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#82aaff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                        <path d="M8 16H3v5"/>
+                    </svg>
+                    <div style="font-size: 1.2rem; color: #94a3b8; margin-top: 15px;">Auto Cleanup</div>
+                </div>
+                <div style="background: #222; padding: 25px 40px; border-radius: 12px; border: 1px solid #444; text-align: center;">
+                    <!-- Lucide: Zap -->
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ffcb6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+                    </svg>
+                    <div style="font-size: 1.2rem; color: #94a3b8; margin-top: 15px;">Better DX</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 60px; color: #64748b;">
+                Found this helpful?<br>
+                <strong style="font-size: 1.6rem;">Repost | Save | Follow</strong>
+            </div>
+        </main>
+        <footer>
+            <div>@cb0401</div>
+            <div>The End</div>
+        </footer>
+    </div>
+
+</body>
+</html>

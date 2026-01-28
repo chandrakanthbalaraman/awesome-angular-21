@@ -6,4 +6,8 @@ export const routes: Routes = [
     path: 'module-01-signals',
     loadChildren: () => import('./modules/module-01-signals/routes'),
   },
+  {
+    path: 'module-02-components',
+    loadChildren: () => import('./modules/module-02-components/routes'),
+  },
 ];
