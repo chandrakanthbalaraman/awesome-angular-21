@@ -40,15 +40,15 @@ module-01-signals/
 
 | #   | Lesson         | Topics                             | Status |
 | --- | -------------- | ---------------------------------- | ------ |
-| 1   | Basic Signals  | `signal()`, `set()`, `update()`    | ⬜     |
-| 2   | Computed       | `computed()`, lazy evaluation      | ⬜     |
-| 3   | Effects        | `effect()`, cleanup, lifecycle     | ⬜     |
-| 4   | Signal Inputs  | `input()`, `required`, `transform` | ⬜     |
-| 5   | Signal Outputs | `output()`, emit patterns          | ⬜     |
-| 6   | Signal Queries | `viewChild()`, `contentChild()`    | ⬜     |
-| 7   | Model Signals  | `model()`, two-way binding         | ⬜     |
-| 8   | RxJS Interop   | `toSignal()`, `toObservable()`     | ⬜     |
-| 🏋️  | Exercise       | Shopping Cart with Signals         | ⬜     |
+| 1   | Basic Signals  | `signal()`, `set()`, `update()`    | ✅     |
+| 2   | Computed       | `computed()`, lazy evaluation      | ✅     |
+| 3   | Effects        | `effect()`, cleanup, lifecycle     | ✅     |
+| 4   | Signal Inputs  | `input()`, `required`, `transform` | ✅     |
+| 5   | Signal Outputs | `output()`, emit patterns          | ✅     |
+| 6   | Signal Queries | `viewChild()`, `contentChild()`    | ✅     |
+| 7   | Model Signals  | `model()`, two-way binding         | ✅     |
+| 8   | RxJS Interop   | `toSignal()`, `toObservable()`     | ✅     |
+| 🏋️  | Exercise       | Shopping Cart with Signals         | ✅     |
 
 ---
 
@@ -73,14 +73,14 @@ ng serve
 
 ## ✅ Completion Checklist
 
-- [ ] Lesson 1: Basic Signals completed
-- [ ] Lesson 2: Computed completed
-- [ ] Lesson 3: Effects completed
-- [ ] Lesson 4: Signal Inputs completed
-- [ ] Lesson 5: Signal Outputs completed
-- [ ] Lesson 6: Signal Queries completed
-- [ ] Lesson 7: Model Signals completed
-- [ ] Lesson 8: RxJS Interop completed
-- [ ] Exercise: Shopping Cart completed
-- [ ] Pushed to GitHub
+- [x] Lesson 1: Basic Signals completed
+- [x] Lesson 2: Computed completed
+- [x] Lesson 3: Effects completed
+- [x] Lesson 4: Signal Inputs completed
+- [x] Lesson 5: Signal Outputs completed
+- [x] Lesson 6: Signal Queries completed
+- [x] Lesson 7: Model Signals completed
+- [x] Lesson 8: RxJS Interop completed
+- [x] Exercise: Shopping Cart completed
+- [x] Pushed to GitHub
 - [ ] LinkedIn post published
